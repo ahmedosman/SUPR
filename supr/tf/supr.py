@@ -185,9 +185,9 @@ class SUPR(object):
         tf_J = tf.einsum('ji,ai->aj', self.J_regressor, pad_v_shaped)
         tf_J = tf.reshape(tf_J,[-1,num_joints,3])
 
-        result, Jtr = verts_core(tf.reshape(pose,(-1,75,3)), v_posed, tf_J, self.weights, self.kintree_table,batch_size,num_joints)
-        result = tf.add(result, tf.tile(tf.expand_dims(trans, axis=1), [1, 10475, 1]))
-        result.Jtr = tf.add(Jtr, tf.tile(tf.expand_dims(trans, axis=1), [1, 75, 1]))
+        result, Jtr = verts_core(tf.reshape(pose,(-1,num_joints,3)), v_posed, tf_J, self.weights, self.kintree_table,batch_size,num_joints)
+        result = tf.add(result, tf.tile(tf.expand_dims(trans, axis=1), [1, num_verts, 1]))
+        result.Jtr = tf.add(Jtr, tf.tile(tf.expand_dims(trans, axis=1), [1, num_joints, 1]))
         result.pose =  pose
         result.trans = trans
         result.betas = betas

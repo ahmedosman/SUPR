@@ -50,7 +50,7 @@ In order to model the foot deformations due to scene contact, we propose an arch
 1. Clone the repository: 
 
 ```Shell
-git clone git@github.com:ahmedosman/STAR.git
+git clone git@github.com:ahmedosman/SUPR.git
 ```
 
 2. Install your favourite Auto Diff. framework 

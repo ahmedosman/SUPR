@@ -48,6 +48,9 @@ In order to model the foot deformations due to scene contact, we propose an arch
 
 ![network](./images/network.png)
 
+![rocking](./images/rocker.png)
+
+
 
 ## Installation
  This repo contains the Tensorflow and PyTorch model loaders for SUPR and the separated body part models.

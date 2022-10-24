@@ -32,14 +32,21 @@ documentation before you download and/or use the SUPR model and software, (the "
 
 
 ## Key Ideas
-Existing body parts models for the head and hands fail to capture the head and hands full range of motion and deformations because they are trained on body part scans which do not capture the head/hand full range of motion. Our key insight is body part scans capture detailed deformations of the head/hand while full body scans capture the full range of motion of the individual body parts releative to the body. To this end, we train SUPR, an expressive body model on a federated dataset of body,hand, head and foot scans, then separate the model into a full suite of state art of the art body part models ( SUPR-Head head model, SUPR-Hand hand model and SUPR-Foot foot model). When separating the models, we suprisingly observe that the body part models for the head/hands are influenced by more joints compared to the artists designed kinematic tree commonly used in head/hand models. 
+Existing body parts models for the head and hands fail to capture the head and hands full range of motion and deformations because they are trained on body part scans which do not capture the head/hand full range of motion. Our key insight is body part scans capture detailed deformations of the head/hand while full body scans capture the full range of motion of the individual body parts releative to the body. To this end, we train SUPR, an expressive body model on a federated dataset of body,hand, head and foot scans, then separate the model into a full suite of state art of the art body part models ( SUPR-Head head model, SUPR-Hand hand model and SUPR-Foot foot model). 
 
+![SUPR Teaser](./images/supr_separate.png)
+
+When separating the models, we suprisingly observe that the body part models for the head/hands are influenced by more joints compared to the artists designed kinematic tree commonly used in head/hand models. 
+
+![kinematic tree](./images/kinematic_tree.png)
 
 SUPR is an expressive body model based on the SMPL-X template mesh, with significantly more joints to model the human foot and toes full range of motion. 
 
 
 
 In order to model the foot deformations due to scene contact, we propose an architecture conditioned on the foot pose, shape and scene contact descriptor to predict the foot deformations due to ground contact. 
+
+![network](./images/network.png)
 
 
 ## Installation

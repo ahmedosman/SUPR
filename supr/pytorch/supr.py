@@ -68,31 +68,20 @@ class SUPR(nn.Module):
         '''
             STAR forward pass given pose, betas (shape) and trans
             return the model vertices and transformed joints
-        :param pose: pose  parameters - A batch size x 72 tensor (3 numbers for each joint)
-        :param beta: beta  parameters - A batch size x number of betas
-        :param beta: trans parameters - A batch size x 3
-        :return:
-                 v         : batch size x 6890 x 3
-                             The STAR model vertices
-                 v.v_vposed: batch size x 6890 x 3 model
-                             STAR vertices in T-pose after adding the shape
-                             blend shapes and pose blend shapes
-                 v.v_shaped: batch size x 6890 x 3
-                             STAR vertices in T-pose after adding the shape
-                             blend shapes and pose blend shapes
-                 v.J_transformed:batch size x 24 x 3
-                                Posed model joints.
-                 v.f: A numpy array of the model face.
+        :param pose: pose  parameters 
+        :param beta: beta  parameters
+        :param beta: trans parameters 
         '''
         device = pose.device
         batch_size = pose.shape[0]
         v_template = self.v_template[None, :]
         shapedirs  = self.shapedirs.view(-1, self.num_betas)[None, :].expand(batch_size, -1, -1)
         beta = betas[:, :, None]
-        v_shaped = torch.matmul(shapedirs, beta).view(-1, 10475, 3) + v_template
-        
         num_verts = v_shaped.shape[1]
         batch_size = v_shaped.shape[0]
+        v_shaped = torch.matmul(shapedirs, beta).view(-1, num_verts, 3) + v_template
+        
+
         num_joints = int(self.J_regressor.shape[0]/3)
 
         pad_v_shaped = v_shaped.view(-1,num_verts*3)
@@ -102,27 +91,27 @@ class SUPR(nn.Module):
         pose_quat = quat_feat(pose.view(-1, 3)).view(batch_size, -1)
         pose_feat = pose_quat
 
-        R = rodrigues(pose.view(-1, 3)).view(batch_size, 75, 3, 3)
-        R = R.view(batch_size, 75, 3, 3)
+        R = rodrigues(pose.view(-1, 3)).view(batch_size, num_joints, 3, 3)
+        R = R.view(batch_size, num_joints, 3, 3)
 
         posedirs = self.posedirs[None, :].expand(batch_size, -1, -1)
-        v_posed = v_shaped + torch.matmul(posedirs, pose_feat[:, :, None]).view(-1, 10475, 3)
+        v_posed = v_shaped + torch.matmul(posedirs, pose_feat[:, :, None]).view(-1, num_verts, 3)
         J_ = J.clone()
         J_[:, 1:, :] = J[:, 1:, :] - J[:, self.parent, :]
         G_ = torch.cat([R, J_[:, :, :, None]], dim=-1)
-        pad_row = torch.FloatTensor([0, 0, 0, 1]).to(device).view(1, 1, 1, 4).expand(batch_size, 75, -1, -1)
+        pad_row = torch.FloatTensor([0, 0, 0, 1]).to(device).view(1, 1, 1, 4).expand(batch_size, num_joints, -1, -1)
         G_ = torch.cat([G_, pad_row], dim=2)
         G = [G_[:, 0].clone()]
-        for i in range(1, 75):
+        for i in range(1, num_joints):
             G.append(torch.matmul(G[self.parent[i - 1]], G_[:, i, :, :]))
         G = torch.stack(G, dim=1)
 
-        rest = torch.cat([J, torch.zeros(batch_size, 75, 1).to(device)], dim=2).view(batch_size, 75, 4, 1)
-        zeros = torch.zeros(batch_size, 75, 4, 3).to(device)
+        rest = torch.cat([J, torch.zeros(batch_size, num_joints, 1).to(device)], dim=2).view(batch_size, num_joints, 4, 1)
+        zeros = torch.zeros(batch_size, num_joints, 4, 3).to(device)
         rest = torch.cat([zeros, rest], dim=-1)
         rest = torch.matmul(G, rest)
         G = G - rest
-        T = torch.matmul(self.weights, G.permute(1, 0, 2, 3).contiguous().view(75, -1)).view(10475, batch_size, 4,4).transpose(0, 1)
+        T = torch.matmul(self.weights, G.permute(1, 0, 2, 3).contiguous().view(num_joints, -1)).view(num_verts, batch_size, 4,4).transpose(0, 1)
         rest_shape_h = torch.cat([v_posed, torch.ones_like(v_posed)[:, :, [0]]], dim=-1)
         v = torch.matmul(T, rest_shape_h[:, :, :, None])[:, :, :3, 0]
         v = v + trans[:,None,:]

@@ -18,7 +18,8 @@ import tensorflow as tf
 import numpy as np
 batch_size = 10
 gender = 'male'
-path_model = '/is/cluster/aosman/eccv2021_final_models/male/body/supr_male.npy'
+ 
+path_model = '' 
 supr = SUPR(path_model)
 trans = tf.constant(np.zeros((1,3)),dtype=tf.float32)
 pose = tf.constant(np.zeros((1,75*3)),dtype=tf.float32)

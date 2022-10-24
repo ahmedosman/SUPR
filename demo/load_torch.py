@@ -21,7 +21,6 @@ import pickle
 import os
 import torch
 
-path_model = '/is/cluster/aosman/eccv2021_final_models/female/body/supr_female.npy'
 betas = np.array([
             np.array([ 2.25176191, -3.7883464, 0.46747496, 3.89178988,
                       2.20098416, 0.26102114, -3.07428093, 0.55708514,

@@ -77,8 +77,7 @@ class SUPR(nn.Module):
         v_template = self.v_template[None, :]
         shapedirs  = self.shapedirs.view(-1, self.num_betas)[None, :].expand(batch_size, -1, -1)
         beta = betas[:, :, None]
-        num_verts = v_shaped.shape[1]
-        batch_size = v_shaped.shape[0]
+        num_verts = v_template.shape[1]
         v_shaped = torch.matmul(shapedirs, beta).view(-1, num_verts, 3) + v_template
         
 

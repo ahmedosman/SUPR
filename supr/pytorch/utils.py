@@ -81,7 +81,7 @@ def with_zeros(input):
     :return: A tensor batch size x 4 x 4 (appended with 0,0,0,1)
     '''
     batch_size  = input.shape[0]
-    row_append     = torch.cuda.FloatTensor(([0.0, 0.0, 0.0, 1.0]))
+    row_append     = torch.FloatTensor(([0.0, 0.0, 0.0, 1.0])).to(input.device)
     row_append.requires_grad = False
     padded_tensor     = torch.cat([input, row_append.view(1, 1, 4).repeat(batch_size, 1, 1)], 1)
     return padded_tensor

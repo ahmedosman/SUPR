@@ -2,3 +2,9 @@
 **/dist
 **/build
 **/demo/convert
+**.pyc
+
+# venv
+.venv/
+
+

@@ -2,7 +2,7 @@
 
 
 
-> **_TLDR:_**  We release a full suite of state of the art models ( 18 models ): A body model, hand model, head model and a foot model, trained on a federated dataset of 1.2 million body, head, hand and foot registrations. 
+> **_TLDR:_**  We release a full suite of state of the art models: A body model, hand model, head model and a foot model, trained on a federated dataset of 1.2 million body, head, hand and foot registrations. 
 
 This repository contains the official Tensorflow and PyTorch implementation of ECCV 2022:
 

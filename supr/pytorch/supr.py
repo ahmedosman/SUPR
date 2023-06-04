@@ -23,19 +23,39 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from .utils import rodrigues , quat_feat , with_zeros
+from .utils import rodrigues , quat_feat , with_zeros , torch_fast_rotutils
 from ..config import cfg 
 
-
 class SUPR(nn.Module):
-    def __init__(self,path_model,num_betas=10):
+    def __init__(self,path_model,num_betas=10 , constrained = True):
         super(SUPR, self).__init__()
 
         if not os.path.exists(path_model):
             raise RuntimeError('Path does not exist %s' % (path_model))
         import numpy as np
 
-        model = np.load(path_model,allow_pickle=True)[()]
+        model = np.load(path_model,allow_pickle=True,encoding='latin1')[()]
+        
+        #Number of model joints 
+        self.num_joints = model['kintree_table'].shape[1]
+
+        #Number of model vertices 
+        self.num_verts = model['v_template'].shape[0]
+
+
+        #Loading the contrained Kinematic Tree, dictionary contains: 
+        # Type of joints in the kinematic tree and the Constrained Axis of Rotation.
+        if 'axis_meta' in model.keys():
+            self.axis_meta = model['axis_meta']
+            self.constrained = True  
+            #Number of pose parameters for the cosntrained kinematic tree 
+            self.num_pose = model['axis_meta']['num_pose']
+        else:
+            self.axis_meta = None 
+            self.constrained = False 
+            #Number of Joints x 3 
+            self.num_pose = self.num_joints*3 
+        
         J_regressor = model['J_regressor']
         self.num_betas = num_betas
 
@@ -45,7 +65,7 @@ class SUPR(nn.Module):
         # Model skinning weights
         self.register_buffer('weights', torch.cuda.FloatTensor(model['weights']))
         # Model pose corrective blend shapes
-        self.register_buffer('posedirs', torch.cuda.FloatTensor(model['posedirs'].reshape((-1,300))))
+        self.register_buffer('posedirs', torch.cuda.FloatTensor(model['posedirs'].reshape((-1,self.num_joints*4))))
         # Mean Shape
         self.register_buffer('v_template', torch.cuda.FloatTensor(model['v_template']))
         # Shape corrective blend shapes
@@ -64,9 +84,23 @@ class SUPR(nn.Module):
         self.J = None
         self.R = None
 
+    def display_info(self):
+        '''
+            Display Info about the model 
+        '''
+
+        if self.constrained:
+            print('Kinematic Treee: Constrained')
+        else:
+            print('Kinematic Tree: Un-Constrained')
+
+        print('Number of Pose Parameters: %d'%(self.num_pose))
+        print('Number of Joints: %d'%(self.num_joints))
+        print('Number of Vertices:%d'%(self.num_verts))
+
     def forward(self, pose, betas , trans):
         '''
-            STAR forward pass given pose, betas (shape) and trans
+            SUPR forward pass given pose, betas (shape) and trans
             return the model vertices and transformed joints
         :param pose: pose  parameters 
         :param beta: beta  parameters
@@ -77,25 +111,35 @@ class SUPR(nn.Module):
         v_template = self.v_template[None, :]
         shapedirs  = self.shapedirs.view(-1, self.num_betas)[None, :].expand(batch_size, -1, -1)
         beta = betas[:, :, None]
-        num_verts = v_shaped.shape[1]
-        batch_size = v_shaped.shape[0]
-        v_shaped = torch.matmul(shapedirs, beta).view(-1, num_verts, 3) + v_template
-        
 
+        num_verts = v_template.shape[1]
+        batch_size = pose.shape[0]
+        v_shaped = torch.matmul(shapedirs, beta).view(-1, num_verts, 3) + v_template
         num_joints = int(self.J_regressor.shape[0]/3)
 
+        #Computing the shape correctives 
         pad_v_shaped = v_shaped.view(-1,num_verts*3)
         pad_v_shaped = torch.cat([pad_v_shaped,torch.ones((batch_size,1)).to(device)],axis=1)
         J = torch.einsum('ji,ai->aj', self.J_regressor, pad_v_shaped)
         J = J.view(-1,num_joints,3)
-        pose_quat = quat_feat(pose.view(-1, 3)).view(batch_size, -1)
-        pose_feat = pose_quat
+        
+        
+        # Replacing that with the Fast Rot Utils Module....
+        if self.constrained and self.axis_meta is not None:
+            torch_feat , R    = torch_fast_rotutils(pose,self.axis_meta)
+            torch_feat = torch_feat.view((batch_size,-1))
+        else:
+            torch_feat = quat_feat(pose.view(-1, 3)).view(batch_size, -1)
+            R = rodrigues(pose.view(-1, 3)).view(batch_size, num_joints, 3, 3)
+            R = R.view(batch_size, num_joints, 3, 3)
 
-        R = rodrigues(pose.view(-1, 3)).view(batch_size, num_joints, 3, 3)
-        R = R.view(batch_size, num_joints, 3, 3)
 
+        pose_feat = torch_feat
         posedirs = self.posedirs[None, :].expand(batch_size, -1, -1)
+
+        #Computing the Pose-Depedent Corrective BlendShapes 
         v_posed = v_shaped + torch.matmul(posedirs, pose_feat[:, :, None]).view(-1, num_verts, 3)
+
         J_ = J.clone()
         J_[:, 1:, :] = J[:, 1:, :] - J[:, self.parent, :]
         G_ = torch.cat([R, J_[:, :, :, None]], dim=-1)

@@ -11,11 +11,6 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 #
-# If you use this code in a research publication please consider citing the following:
-#
-# STAR: Sparse Trained  Articulated Human Body Regressor <https://arxiv.org/pdf/2008.08535.pdf>
-#
-#
 # Code Developed by:
 # Ahmed A. A. Osman
 
@@ -142,7 +137,8 @@ def torch_fast_rotutils(pose,meta):
     indx_hinge_axis = meta['indx_hinge_axis']
     reverse_indx = meta['reverse_indx']
 
-    axis = torch.cuda.FloatTensor(meta['axis'])
+    axis_indx = meta['axis_indx']
+    axis = torch.cuda.FloatTensor(meta['axis'][:,axis_indx,:])
     indx_spherical = np.concatenate(indx_spherical)
     indx_hinge     = np.concatenate(indx_hinge,axis=0)
     
@@ -166,6 +162,7 @@ def torch_fast_rotutils(pose,meta):
 
 
     rot_mat = torch_compute_rot_hinge(hinge_pose[:,:,None],hinge_axis_pose)
+    test_case = [rot_mat,hinge_pose,hinge_axis_pose]
     list_rotat_mat.append(rot_mat)
     axis_angle = hinge_axis_pose*hinge_pose[:,:,None]
     

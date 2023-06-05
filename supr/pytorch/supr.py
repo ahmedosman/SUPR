@@ -64,8 +64,9 @@ class SUPR(nn.Module):
 
         # Model skinning weights
         self.register_buffer('weights', torch.cuda.FloatTensor(model['weights']))
+
         # Model pose corrective blend shapes
-        self.register_buffer('posedirs', torch.cuda.FloatTensor(model['posedirs'].reshape((-1,self.num_joints*4))))
+        self.register_buffer('posedirs', torch.cuda.FloatTensor(model['posedirs']))
         # Mean Shape
         self.register_buffer('v_template', torch.cuda.FloatTensor(model['v_template']))
         # Shape corrective blend shapes
@@ -86,7 +87,10 @@ class SUPR(nn.Module):
 
     def display_info(self):
         '''
-            Display Info about the model 
+            Display Information about the model 
+            Number of Pose Parameters
+            Number of Shape Parameters
+            Number of Vertices
         '''
 
         if self.constrained:
@@ -136,10 +140,10 @@ class SUPR(nn.Module):
 
 
         pose_feat = torch_feat
-        posedirs = self.posedirs[None, :].expand(batch_size, -1, -1)
-
+        posedirs = self.posedirs.view(num_verts,3,self.posedirs.shape[-1])
+        
         #Computing the Pose-Depedent Corrective BlendShapes 
-        v_posed = v_shaped + torch.matmul(posedirs, pose_feat[:, :, None]).view(-1, num_verts, 3)
+        v_posed = v_shaped + torch.einsum('ijk,lk->lij', posedirs,torch_feat)
 
         J_ = J.clone()
         J_[:, 1:, :] = J[:, 1:, :] - J[:, self.parent, :]
@@ -161,9 +165,10 @@ class SUPR(nn.Module):
         v = torch.matmul(T, rest_shape_h[:, :, :, None])[:, :, :3, 0]
         v = v + trans[:,None,:]
         v.f = self.f
+
         v.v_posed = v_posed
         v.v_shaped = v_shaped
-
+        
         root_transform = with_zeros(torch.cat((R[:,0],J[:,0][:,:,None]),2))
         results =  [root_transform]
         for i in range(0, self.parent.shape[0]):

@@ -106,6 +106,7 @@ class SUPR(nn.Module):
         :param beta: beta  parameters
         :param beta: trans parameters 
         '''
+
         device = pose.device
         batch_size = pose.shape[0]
         v_template = self.v_template[None, :]
@@ -129,8 +130,8 @@ class SUPR(nn.Module):
             torch_feat , R    = torch_fast_rotutils(pose,self.axis_meta)
             torch_feat = torch_feat.view((batch_size,-1))
         else:
-            torch_feat = quat_feat(pose.view(-1, 3)).view(batch_size, -1)
-            R = rodrigues(pose.view(-1, 3)).view(batch_size, num_joints, 3, 3)
+            torch_feat = quat_feat(pose.view(-1,self.num_joints, 3)).view(batch_size, -1)
+            R = rodrigues(pose.view(-1,self.num_joints, 3)).view(batch_size, num_joints, 3, 3)
             R = R.view(batch_size, num_joints, 3, 3)
 
 

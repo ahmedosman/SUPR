@@ -27,12 +27,21 @@ betas = np.array([
                       -3.94442258, -2.88552087])])
 num_betas=10
 batch_size=1
-m = SUPR(path_model,num_betas=num_betas)
-poses = torch.cuda.FloatTensor(np.zeros((batch_size,75*3)))
-betas = torch.cuda.FloatTensor(betas)
 
+#Set the Path of the model.
+path_model = ''
+if path_model is '':
+    raise RuntimeError('Set the model path!!')
+
+#Loading the Model 
+m = SUPR(path_model,num_betas=num_betas)
+#Printing Information about the loaded model - 
+# 1 - dimensionality of the pose/shape parameters
+# 2- Kinematic Tree (Constrained or Un Constrained )
+m.display_info()
+
+#Passing Pose and Shape Parameters 
+poses = torch.cuda.FloatTensor(np.zeros((batch_size,m.num_pose)))
+betas = torch.cuda.FloatTensor(betas)
 trans = torch.cuda.FloatTensor(np.zeros((batch_size,3)))
 model = m.forward(poses, betas,trans)
-shaped = model.v_shaped[-1, :, :]
-
-

@@ -132,7 +132,7 @@ and our earlier related works:
 
 ## Acknowledgments
 
-The authors thank the MPI-IS Tu ̈bingen members of the data capture team since 2012 for capturing the data used to train SUPR: S. Polikovsky, A. Keller, E. Holderness, J. M ́arquez, T. Alexiadis, M. H ̈oschle, M. Landry, G. Henz, M. Safroshkin, M. Landry, T. McConnell, T. Bauch and B. Pellkofer for the IT support. The authors thank M. Safroshkin and M. Landry for configuring the foot scanner. The authors thank the International Max Planck Research School for Intelligent Systems (IMPRS-IS) for supporting Ahmed A. A. Osman.
+Thanks to [Daniel Zieger](https://www.lgdv.tf.fau.de/person/2630/) for updating the constrained kinematic tree SUPR model. 
 
 
 ## Contact
